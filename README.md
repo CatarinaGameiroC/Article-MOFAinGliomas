@@ -1,10 +1,11 @@
-# Possible Article about `Integrative Sparse Multi-Omics Analysis for Understanding Glioma Heterogeneity`
+# Possible Article about `{Uncovering Latent Structure in Gliomas Using Multi-Omics Factor Analysis`
 
-This repository contains code for analyzing glioma heterogeneity using a sparse dimensionality reduction methods: **MOFA** (Multi-Omics Factor Analysis) and **sGCCA** (Sparse Generalized Canonical Correlation Analysis).
+This repository contains code for analyzing glioma heterogeneity using a sparse dimensionality reduction methods: **MOFA** (Multi-Omics Factor Analysis).
 
-## Structure
-- Scripts for each method are organized in their respective folders: `MOFA/` and `sGCCA/`.
+## Structure.
 - All preprocessing and analysis steps are provided in `.Rmd` files.
+- The factors/loadings used are saved in folder `mofa-output`.
+- The reuslts presented cam be obtained by running `mofa-results.R` file.
 
 ## Datasets
 - Only the mutations dataset and the corresponding ground-truth labels for each patient are included directly in this repository. The ground-truth labels are based on the classification described in [this study](https://www.biorxiv.org/content/10.1101/2023.02.19.529134v3.full.pdf).
