@@ -1,4 +1,4 @@
-# Possible Article about `{Uncovering Latent Structure in Gliomas Using Multi-Omics Factor Analysis`
+# Possible Article about `Uncovering Latent Structure in Gliomas Using Multi-Omics Factor Analysis`
 
 This repository contains code for analyzing glioma heterogeneity using a sparse dimensionality reduction methods: **MOFA** (Multi-Omics Factor Analysis).
 
