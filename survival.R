@@ -14,7 +14,24 @@ classification <- ifelse(classification == "glioblastoma", "GBM",
                                 ifelse(classification  == "oligodendroglioma", "OLIGO",
                                        NA)))
 
+loadings <- list(
+  Mutations = as.matrix(read.csv("mofa-output/loadings_mutations.csv", row.names = 1)),
+  Methylation = as.matrix(read.csv("mofa-output/loadings_Methylation.csv", row.names = 1)),
+  mRNA = as.matrix(read.csv("mofa-output/loadings_mrna.csv", row.names = 1)),
+  miRNA = as.matrix(read.csv("mofa-output/loadings_mirna.csv", row.names = 1))
+)
 
+# DNA Methylation Omic
+methy_sel_f1 <- names(head(sort(abs(loadings$Methylation[, 1]), decreasing = TRUE), 30)) 
+methy_sel_f3 <- names(head(sort(abs(loadings$Methylation[, 3]), decreasing = TRUE), 30))
+
+# mRNA Omic
+mrna_sel_f1 <- names(head(sort(abs(loadings$mRNA[, 1]), decreasing = TRUE), 30))
+mrna_sel_f2 <- names(head(sort(abs(loadings$mRNA[, 2]), decreasing = TRUE), 30))
+mrna_sel_f3 <- names(head(sort(abs(loadings$mRNA[, 3]), decreasing = TRUE), 30))
+
+
+## Arrange data
 mrna <- mrna[intersect(rownames(mrna), intersect(rownames(survival.complete), names(classification))), ] # 652
 dna <- dna[intersect(rownames(dna), intersect(rownames(survival.complete), names(classification))), ] # 624
 
@@ -27,64 +44,47 @@ classification_dna <- classification[rownames(dna)]
 survival.complete_dna <- as.data.frame(survival.complete_dna)
 
 
-## Functions
-surv_group_mrna <- function(vec_genes, omic_dataset, group, survival){
-  res <- data.frame(Gene = character(), P_Value = numeric(), stringsAsFactors = FALSE)
-  samples <- names(classification)[which(classification %in% group)]
-  data_up <- as.data.frame(survival[samples, ])
-  for (gene in vec_genes){
+## Function
 
-    median <- median(omic_dataset[samples, gene], na.rm = TRUE)
-    data_up$gene_group <- ifelse(omic_dataset[samples, gene] >= median, "High", "Low")
-    
-    surv_obj <- Surv(time = data_up[,"Time"], event = data_up[ ,"Status"])
-    km_fit <- survfit(surv_obj ~ gene_group, data = data_up)
- 
-    log_rank_test <- survdiff(surv_obj ~ gene_group, data = data_up)
-    p_value <- log_rank_test$pvalue
-    
-    res <- rbind(res, data.frame(Gene = gene, P_Value = p_value))
-    #p <- ggsurvplot(km_fit, data = data_up,   pval = TRUE, isk.table = FALSE)
-    #print(p)
-  }
+surv_group <- function(vec_genes, omic_dataset, group, survival, classes){
   
-  rownames(res) <- res[,1]
-  res <- res[, -1, drop=F]
-  return(res)
-}
-
-surv_group_methy <- function(vec_genes, omic_dataset, group, survival){
   res <- data.frame(Gene = character(), P_Value = numeric(), stringsAsFactors = FALSE)
-  samples <- names(classification_dna)[which(classification_dna %in% group)]
-  data_up <- as.data.frame(survival[samples, ])
-  for (gene in vec_genes){
-    
+  
+  if (length(group) > 1){
+    samples <- c(names(classes == group[1]), names(classes == group[2]))
+  }
+  else{
+    samples <- c(names(classes == group))
+  }
+  data <- survival[samples, ]
+  
+  for (gene in vec_genes) {
     median <- median(omic_dataset[samples, gene], na.rm = TRUE)
-    data_up$gene_group <- ifelse(omic_dataset[samples, gene] >= median, "High", "Low")
+    data$gene_group <- ifelse(omic_dataset[samples, gene] >= median, "High", "Low")
     
-    surv_obj <- Surv(time = data_up[,"Time"], event = data_up[ ,"Status"])
-    km_fit <- survfit(surv_obj ~ gene_group, data = data_up)
-    
-    log_rank_test <- survdiff(surv_obj ~ gene_group, data = data_up)
-    p_value <- log_rank_test$pvalue
+    surv_obj <- Surv(time = survival.complete[samples, "Time"], 
+                     event = survival.complete[samples, "Status"])
+    log_rank_test <- survdiff(surv_obj ~ gene_group, data = data)
+    p_value <- 1 - pchisq(log_rank_test$chisq, length(log_rank_test$n) - 1) 
     
     res <- rbind(res, data.frame(Gene = gene, P_Value = p_value))
-    #p <- ggsurvplot(km_fit, data = data_up,   pval = TRUE, isk.table = FALSE)
-    #print(p)
   }
   rownames(res) <- res[,1]
-  res <- res[, -1, drop=F]
-  return(res)
+  res <- res[, -1, drop = F]
+  return (res)
 }
-#ASTRO   GBM OLIGO 
-# 248   207   165 
 
-gbm_mrna <- surv_group_mrna(c(mrna_sel_f1, mrna_sel_f2, mrna_sel_f3), mrna, "GBM", survival.complete)
-lgg_mrna <- surv_group_mrna(c(mrna_sel_f1, mrna_sel_f2, mrna_sel_f3), mrna, c("ASTRO", "OLIGO"), survival.complete)
 
+
+gbm_mrna <- surv_group(c(mrna_sel_f1, mrna_sel_f2, mrna_sel_f3), mrna, "GBM",
+                       survival.complete, classification)
+lgg_mrna <- surv_group(c(mrna_sel_f1, mrna_sel_f2, mrna_sel_f3), mrna, c("ASTRO", "OLIGO"), 
+                       survival.complete, classification)
                        
-gbm_methy <- surv_group_methy(c(methy_sel_f1, methy_sel_f3), dna, "GBM", survival.complete_dna)
-lgg_methy <- surv_group_methy(c(methy_sel_f1, methy_sel_f3), dna, c("ASTRO", "OLIGO"),survival.complete_dna)
+gbm_methy <- surv_group(c(methy_sel_f1, methy_sel_f3), dna, "GBM", 
+                              survival.complete_dna, classification_dna)
+lgg_methy <- surv_group(c(methy_sel_f1, methy_sel_f3), dna, c("ASTRO", "OLIGO"),
+                              survival.complete_dna, classification_dna)
                                               
                        
                        

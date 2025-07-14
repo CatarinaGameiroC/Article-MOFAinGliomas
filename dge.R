@@ -5,7 +5,7 @@ source("setup.R")
 methy <- read.csv("DataSets/original_assays/assay_methylation_for_dge.csv", 
                row.names = 1)
 methy_beta <- t(M2B(methy))
-# 631 8354 (samples)
+
 
 mrna <- t(as.matrix(read.csv("DataSets/original_assays/assay_rna_coding.csv", row.names = 1)))
 
@@ -64,12 +64,35 @@ dge_2_save_methy <- function(df){
   return (df)
 }
 
+gbm_astro_df <- dge_2_save_methy(gbm_vs_astro_methy$ASTRO_to_GBM)
+oligo_gbm_df <- dge_2_save_methy(gbm_vs_oligo_methy$GBM_to_OLIGO)
 
-write.csv(dge_2_save_methy(gbm_vs_astro_methy$ASTRO_to_GBM), 
+oligo_gbm_df$diffexpressed <- ifelse(
+  oligo_gbm_df$diffexpressed == "UP",
+  "DOWN",
+  ifelse(
+    oligo_gbm_df$diffexpressed == "DOWN",
+    "UP",
+    oligo_gbm_df$diffexpressed
+  )
+)
+
+oligo_astro_df <- dge_2_save_methy(astro_vs_oligo_methy$ASTRO_to_OLIGO)
+oligo_astro_df$diffexpressed <- ifelse(
+  oligo_astro_df$diffexpressed == "UP",
+  "DOWN",
+  ifelse(
+    oligo_astro_df$diffexpressed == "DOWN",
+    "UP",
+    oligo_astro_df$diffexpressed
+  )
+)
+
+write.csv(gbm_astro_df, 
           "dge-results/gbm_vs_astro_methy.csv", row.names = TRUE)
-write.csv(dge_2_save_methy(gbm_vs_oligo_methy$GBM_to_OLIGO), 
+write.csv(oligo_gbm_df, 
           "dge-results/oligo_vs_gbm_methy.csv", row.names = TRUE)
-write.csv(dge_2_save_methy(astro_vs_oligo_methy$ASTRO_to_OLIGO),
+write.csv(oligo_astro_df,
           "dge-results/astro_vs_oligo_methy.csv", row.names = TRUE)
 
 
